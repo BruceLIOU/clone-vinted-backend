@@ -22,7 +22,7 @@ const products = require("../data/products.json");
 // Si aucun filtre n'est envoyé, cette route renverra l'ensemble des annonces
 router.get("/offers", async (req, res) => {
   try {
-    // création d'un objet dans lequel on va sotcker nos différents filtres
+    // création d'un objet dans lequel on va stocker nos différents filtres
     let filters = {};
 
     if (req.query.title) {
@@ -70,6 +70,8 @@ router.get("/offers", async (req, res) => {
       .sort(sort)
       .skip((page - 1) * limit) // ignorer les x résultats
       .limit(limit); // renvoyer y résultats
+
+    console.log(offers);
 
     // cette ligne va nous retourner le nombre d'annonces trouvées en fonction des filtres
     const count = await Offer.countDocuments(filters);
