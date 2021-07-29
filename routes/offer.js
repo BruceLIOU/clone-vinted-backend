@@ -15,9 +15,6 @@ const Offer = require("../models/Offer");
 // Import du middleware isAuthenticated
 const isAuthenticated = require("../middlewares/isAuthenticated");
 
-// Import des datas (ne pas en tenir compte, cela sert au reset de la BDD entre 2 sessions de formation)
-const products = require("../data/products.json");
-
 // Route qui nous permet de récupérer une liste d'annonces, en fonction de filtres
 // Si aucun filtre n'est envoyé, cette route renverra l'ensemble des annonces
 router.get("/offers", async (req, res) => {
@@ -230,91 +227,6 @@ router.delete("/offer/delete/:id", isAuthenticated, async (req, res) => {
   } catch (error) {
     console.log(error.message);
     res.status(400).json({ error: error.message });
-  }
-});
-
-// CETTE ROUTE SERT AU RESET DE LA BDD ENTRE 2 SESSIONS DE FORMATION. CELA NE FAIT PAS PARTIE DE L'EXERCICE.
-// RESET ET INITIALISATION BDD
-router.get("/reset-offers", async (req, res) => {
-  const allUserId = await User.find().select("_id");
-  // console.log(allUserId);
-  if (allUserId.length === 0) {
-    return res.send(
-      "Il faut d'abord reset la BDD de users. Voir la route /reset-users"
-    );
-  } else {
-    // Vider la collection Offer
-    await Offer.deleteMany({});
-
-    // Supprimer le dossier "api/vinted/offers" sur cloudinary
-    // Pour cela, il faut supprimer les images, cloudinary ne permettant pas de supprimer des dossiers qui ne sont pas vides
-    try {
-      const deleteResources = await cloudinary.api.delete_resources_by_prefix(
-        "api/vinted/offers"
-      );
-    } catch (error) {
-      console.log("deleteResources ===>  ", error.message);
-    }
-
-    // Maintenant les dossiers vides, on peut les supprimer
-    try {
-      const deleteFolder = await cloudinary.api.delete_folder(
-        "api/vinted/offers"
-      );
-    } catch (error) {
-      console.log("deleteFolder error ===> ", error.message);
-    }
-
-    // // Créer les annonces
-    for (let i = 0; i < products.length; i++) {
-      try {
-        // Création de la nouvelle annonce
-        const newOffer = new Offer({
-          product_name: products[i].product_name,
-          product_description: products[i].product_description,
-          product_price: products[i].product_price,
-          product_details: products[i].product_details,
-          // créer des ref aléatoires
-          owner: allUserId[Math.floor(Math.random() * allUserId.length + 1)],
-        });
-
-        // Uploader l'image principale du produit
-        const resultImage = await cloudinary.uploader.upload(
-          products[i].product_image,
-          {
-            folder: `api/vinted/offers/${newOffer._id}`,
-            public_id: "preview",
-          }
-        );
-
-        // Uploader les images de chaque produit
-        newProduct_pictures = [];
-        for (let j = 0; j < products[i].product_pictures.length; j++) {
-          try {
-            const resultPictures = await cloudinary.uploader.upload(
-              products[i].product_pictures[j],
-              {
-                folder: `api/vinted/offers/${newOffer._id}`,
-              }
-            );
-
-            newProduct_pictures.push(resultPictures);
-          } catch (error) {
-            console.log("uploadCloudinaryError ===> ", error.message);
-          }
-        }
-
-        newOffer.product_image = resultImage;
-        newOffer.product_pictures = newProduct_pictures;
-
-        await newOffer.save();
-        console.log(`✅ offer saved : ${i + 1} / ${products.length}`);
-      } catch (error) {
-        console.log("newOffer error ===> ", error.message);
-      }
-    }
-    res.send("Done !");
-    console.log(`🍺 All offers saved !`);
   }
 });
 
