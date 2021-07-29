@@ -88,7 +88,7 @@ router.get("/offer/:id", async (req, res) => {
   try {
     const offer = await Offer.findById(req.params.id).populate({
       path: "owner",
-      select: "account.username account.phone account.avatar",
+      select: "account",
     });
     res.json(offer);
   } catch (error) {
@@ -105,7 +105,7 @@ router.post("/offer/publish", isAuthenticated, async (req, res) => {
 
     console.log(req.fields);
 
-    if (title && price && req.files.picture.path) {
+    if (title || price || req.files) {
       // Création de la nouvelle annonce (sans l'image)
       const newOffer = new Offer({
         product_name: title,
@@ -121,31 +121,41 @@ router.post("/offer/publish", isAuthenticated, async (req, res) => {
         owner: req.user,
       });
 
-      // Envoi de l'image à cloudinary
-      const result = await cloudinary.uploader.unsigned_upload(
-        req.files.picture.path,
-        "vinted_upload",
-        {
-          folder: `api/vinted/offers/${newOffer._id}`,
-          public_id: "preview",
-          cloud_name: "lereacteur",
+      // Upload of multiple pictures
+      const fileKeys = Object.keys(req.files); // [ 'picture 1', 'picture 2', ... ]
+
+      let results = [];
+
+      // Making sure a file is associated with the files keys
+      fileKeys.forEach(async (fileKey) => {
+        if (req.files[fileKey].size === 0) {
+          console.log("File key exist but no file uploaded");
+          res.status(400).json({
+            message: "The file is missing",
+          });
+        } else {
+          const filePath = req.files[fileKey].path; // Local path to the picture(s)
+          const result = await cloudinary.uploader.upload(filePath, {
+            folder: `/api/vinted/offers/${newOffer._id}`,
+            public_id: `${fileKey}`,
+          });
+          console.log(`${fileKey} uploaded`);
+          result.public_name = fileKey;
+          results.push(result);
+
+          // If there are no more pictures to upload, next!
+          if (Object.keys(results).length === fileKeys.length) {
+            newOffer.product_pictures = results;
+            // Save the newOffer with files details in the DB
+            await newOffer.save();
+            console.log("Pictures details saved in DB");
+            res.status(201).json(newOffer);
+          }
         }
-      );
-
-      // ajout de l'image dans newOffer
-      newOffer.product_image = result;
-
-      await newOffer.save();
-
-      res.json(newOffer);
-    } else {
-      res
-        .status(400)
-        .json({ message: "title, price and picture are required" });
+      });
     }
   } catch (error) {
-    console.log(error.message);
-    res.status(400).json({ message: error.message });
+    res.status(400).json({ error: error.message });
   }
 });
 

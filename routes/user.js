@@ -16,10 +16,6 @@ const salt = uid2(16);
 // Import du package cloudinary
 const cloudinary = require("cloudinary").v2;
 
-const faker = require("faker");
-faker.locale = "fr";
-const owners = require("../data/owners.json");
-
 // route signup
 router.post("/user/signup", async (req, res) => {
   try {
@@ -42,6 +38,17 @@ router.post("/user/signup", async (req, res) => {
         hash: hash,
         token: token,
       });
+
+      // Upload profile picture
+      if (req.fields.avatar) {
+        let pictureToUpload = req.files.avatar.path; // Local link to picture
+        const result = await cloudinary.uploader.upload(pictureToUpload, {
+          folder: `/vinted/users/${newUser._id}`,
+        }); // Cloudinary upload result
+
+        // Adding the picture's details to the newUser (better to save the whole result in case we need other picture data)
+        newUser.account.avatar = result;
+      }
 
       await newUser.save();
       res.status(200).json({
