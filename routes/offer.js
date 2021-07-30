@@ -25,13 +25,13 @@ router.get("/offers", async (req, res) => {
     if (req.query.title) {
       filters.product_name = new RegExp(req.query.title, "i");
     }
-
+    // Slider priceMin
     if (req.query.priceMin) {
       filters.product_price = {
         $gte: req.query.priceMin,
       };
     }
-
+    // Slider priceMax
     if (req.query.priceMax) {
       if (filters.product_price) {
         filters.product_price.$lte = req.query.priceMax;
@@ -43,7 +43,7 @@ router.get("/offers", async (req, res) => {
     }
 
     let sort = {};
-
+    // Swicth desc / asc
     if (req.query.sort === "price-desc") {
       sort = { product_price: -1 };
     } else if (req.query.sort === "price-asc") {
