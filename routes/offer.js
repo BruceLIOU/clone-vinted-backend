@@ -68,7 +68,7 @@ router.get("/offers", async (req, res) => {
       .skip((page - 1) * limit) // ignorer les x résultats
       .limit(limit); // renvoyer y résultats
 
-    console.log(offers);
+    //console.log(offers);
 
     // cette ligne va nous retourner le nombre d'annonces trouvées en fonction des filtres
     const count = await Offer.countDocuments(filters);
@@ -78,7 +78,7 @@ router.get("/offers", async (req, res) => {
       offers: offers,
     });
   } catch (error) {
-    console.log(error.message);
+    //console.log(error.message);
     res.status(400).json({ message: error.message });
   }
 });
@@ -90,26 +90,33 @@ router.get("/offer/:id", async (req, res) => {
       path: "owner",
       select: "account",
     });
-    res.json(offer);
+    res.status(200).json(offer);
   } catch (error) {
-    console.log(error.message);
+    //console.log(error.message);
     res.status(400).json({ message: error.message });
   }
 });
 
 router.post("/offer/publish", isAuthenticated, async (req, res) => {
-  // route qui permet de poster une nouvelle annonce
   try {
-    const { title, description, price, brand, size, condition, color, city } =
-      req.fields;
+    const {
+      title,
+      description,
+      category,
+      price,
+      brand,
+      size,
+      condition,
+      color,
+      city,
+    } = req.fields;
 
-    console.log(req.fields);
-
-    if (title || price || req.files) {
-      // Création de la nouvelle annonce (sans l'image)
+    if (title && price && req.files.picture.path) {
+      // Creation of a new Offer without picture
       const newOffer = new Offer({
         product_name: title,
         product_description: description,
+        product_category: category,
         product_price: price,
         product_details: [
           { MARQUE: brand },
@@ -121,41 +128,29 @@ router.post("/offer/publish", isAuthenticated, async (req, res) => {
         owner: req.user,
       });
 
-      // Upload of multiple pictures
-      const fileKeys = Object.keys(req.files); // [ 'picture 1', 'picture 2', ... ]
-
-      let results = [];
-
-      // Making sure a file is associated with the files keys
-      fileKeys.forEach(async (fileKey) => {
-        if (req.files[fileKey].size === 0) {
-          console.log("File key exist but no file uploaded");
-          res.status(400).json({
-            message: "The file is missing",
-          });
-        } else {
-          const filePath = req.files[fileKey].path; // Local path to the picture(s)
-          const result = await cloudinary.uploader.upload(filePath, {
+      if (req.files.picture.size > 0) {
+        // Send picture at cloudinary if she exist
+        const result = await cloudinary.uploader.upload(
+          req.files.picture.path,
+          {
             folder: `/api/vinted/offers/${newOffer._id}`,
-            public_id: `${fileKey}`,
-          });
-          console.log(`${fileKey} uploaded`);
-          result.public_name = fileKey;
-          results.push(result);
-
-          // If there are no more pictures to upload, next!
-          if (Object.keys(results).length === fileKeys.length) {
-            newOffer.product_pictures = results;
-            // Save the newOffer with files details in the DB
-            await newOffer.save();
-            console.log("Pictures details saved in DB");
-            res.status(201).json(newOffer);
           }
-        }
-      });
+        );
+
+        // Add picture in newOffer
+        newOffer.product_image = result.secure_url;
+      }
+
+      await newOffer.save();
+
+      res.json(newOffer);
+    } else {
+      res
+        .status(400)
+        .json({ message: "title, price and picture are required" });
     }
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(400).json({ message: error.message });
   }
 });
 
@@ -215,7 +210,7 @@ router.put("/offer/update/:id", isAuthenticated, async (req, res) => {
 
     res.status(200).json("Offer modified succesfully !");
   } catch (error) {
-    console.log(error.message);
+    //console.log(error.message);
     res.status(400).json({ error: error.message });
   }
 });
@@ -235,7 +230,7 @@ router.delete("/offer/delete/:id", isAuthenticated, async (req, res) => {
 
     res.status(200).json("Offer deleted succesfully !");
   } catch (error) {
-    console.log(error.message);
+    //console.log(error.message);
     res.status(400).json({ error: error.message });
   }
 });
