@@ -224,10 +224,10 @@ router.delete("/offer/delete/:id", isAuthenticated, async (req, res) => {
   try {
     //Je supprime ce qui il y a dans le dossier
     await cloudinary.api.delete_resources_by_prefix(
-      `api/vinted/offers/${req.params.id}`
+      `/api/vinted/offers/${req.params.id}`
     );
     //Une fois le dossier vide, je peux le supprimer !
-    await cloudinary.api.delete_folder(`api/vinted/offers/${req.params.id}`);
+    await cloudinary.api.delete_folder(`/api/vinted/offers/${req.params.id}`);
 
     offerToDelete = await Offer.findById(req.params.id);
 
