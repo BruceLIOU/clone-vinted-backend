@@ -220,22 +220,32 @@ router.put("/offer/update/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-router.delete("/offer/delete/:id", isAuthenticated, async (req, res) => {
+router.delete("/offer/delete/:_id", isAuthenticated, async (req, res) => {
   try {
-    //Je supprime ce qui il y a dans le dossier
-    await cloudinary.api.delete_resources_by_prefix(
-      `/api/vinted/offers/${req.params.id}`
-    );
-    //Une fois le dossier vide, je peux le supprimer !
-    await cloudinary.api.delete_folder(`/api/vinted/offers/${req.params.id}`);
+    let offerToDelete = await Offer.findById(req.params._id);
 
-    offerToDelete = await Offer.findById(req.params.id);
+    if (offerToDelete) {
+      // Delete assets with a public ID that starts with the given prefix
+      await cloudinary.api.delete_resources_by_prefix(
+        `/api/vinted/offers/${req.params._id}`
+      );
+      // Delete the empty folder
+      await cloudinary.api.delete_folder(
+        `/api/vinted/offers/${req.params._id}`
+      );
 
-    await offerToDelete.delete();
+      // Delete the offer from the DB
+      offerToDelete = await Offer.findByIdAndDelete(req.params._id);
 
-    res.status(200).json("Offer deleted succesfully !");
+      res.status(200).json({
+        message: "Your offer has been successfully deleted.",
+      });
+    } else {
+      res.status(400).json({
+        message: "Bad request",
+      });
+    }
   } catch (error) {
-    //console.log(error.message);
     res.status(400).json({ error: error.message });
   }
 });
