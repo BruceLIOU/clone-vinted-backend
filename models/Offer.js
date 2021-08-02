@@ -1,10 +1,19 @@
+// import packages
 const mongoose = require("mongoose");
 
-// Model DB
 const Offer = mongoose.model("Offer", {
-  product_name: String,
-  product_description: String,
-  product_price: Number,
+  product_name: {
+    type: String,
+    maxLength: 50,
+  },
+  product_description: {
+    type: String,
+    maxLength: 500,
+  },
+  product_price: {
+    type: Number,
+    max: 100000,
+  },
   product_details: Array,
   product_pictures: {
     type: mongoose.Schema.Types.Mixed,
@@ -17,4 +26,5 @@ const Offer = mongoose.model("Offer", {
   },
 });
 
+// Model export
 module.exports = Offer;

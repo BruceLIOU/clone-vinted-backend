@@ -97,60 +97,65 @@ router.get("/offer/:id", async (req, res) => {
   }
 });
 
+// route POST to publish an offer
 router.post("/offer/publish", isAuthenticated, async (req, res) => {
   try {
-    const {
-      title,
-      description,
-      category,
-      price,
-      brand,
-      size,
-      condition,
-      color,
-      city,
-    } = req.fields;
-
-    if (title && price && req.files.picture.path) {
-      // Creation of a new Offer without picture
+    if (
+      req.files ||
+      req.fields.title ||
+      req.fields.description ||
+      req.fields.price
+    ) {
+      // Creating the new offer (and its ID)
       const newOffer = new Offer({
-        product_name: title,
-        product_description: description,
-        product_category: category,
-        product_price: price,
+        product_name: req.fields.title,
+        product_description: req.fields.description,
+        product_price: req.fields.price,
         product_details: [
-          { MARQUE: brand },
-          { TAILLE: size },
-          { ÉTAT: condition },
-          { COULEUR: color },
-          { EMPLACEMENT: city },
+          { MARQUE: req.fields.brand },
+          { TAILLE: req.fields.size },
+          { ÉTAT: req.fields.condition },
+          { COULEUR: req.fields.color },
+          { EMPLACEMENT: req.fields.city },
         ],
-        owner: req.user,
+        owner: req.user, // Get all user info to avoid populate issues
       });
 
-      if (req.files.picture.size > 0) {
-        // Send picture at cloudinary if she exist
-        const result = await cloudinary.uploader.upload(
-          req.files.picture.path,
-          {
+      // Upload of multiple pictures
+      const fileKeys = Object.keys(req.files); // [ 'picture 1', 'picture 2', ... ]
+
+      let results = [];
+
+      // Making sure a file is associated with the files keys
+      fileKeys.forEach(async (fileKey) => {
+        if (req.files[fileKey].size === 0) {
+          console.log("File key exist but no file uploaded");
+          res.status(400).json({
+            message: "The file is missing",
+          });
+        } else {
+          const filePath = req.files[fileKey].path; // Local path to the picture(s)
+          const result = await cloudinary.uploader.upload(filePath, {
             folder: `/api/vinted/offers/${newOffer._id}`,
+            public_id: `${fileKey}`,
+          });
+          console.log(`${fileKey} uploaded`);
+          result.public_name = fileKey;
+          results.push(result);
+
+          // If there are no more pictures to upload, next!
+          if (Object.keys(results).length === fileKeys.length) {
+            newOffer.product_pictures = results;
+            // Save the newOffer with files details in the DB
+            await newOffer.save();
+            console.log("Pictures details saved in DB");
+            res.status(201).json(newOffer);
           }
-        );
-
-        // Add picture in newOffer
-        newOffer.product_image = result.secure_url;
-      }
-
-      await newOffer.save();
-
-      res.json(newOffer);
-    } else {
-      res
-        .status(400)
-        .json({ message: "title, price and picture are required" });
+        }
+      });
     }
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({ error: error.message });
   }
 });
 
@@ -201,7 +206,7 @@ router.put("/offer/update/:id", isAuthenticated, async (req, res) => {
 
     if (req.files.picture) {
       const result = await cloudinary.uploader.upload(req.files.picture.path, {
-        public_id: `api/vinted/offers/${offerToModify._id}/preview`,
+        public_id: `/api/vinted/offers/${offerToModify._id}/preview`,
       });
       offerToModify.product_image = result;
     }
