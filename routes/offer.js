@@ -220,22 +220,21 @@ router.put("/offer/update/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-router.delete("/offer/delete/:_id", isAuthenticated, async (req, res) => {
+router.delete("/offer/delete/:id", isAuthenticated, async (req, res) => {
   try {
-    let offerToDelete = await Offer.findById(req.params._id);
+    let offerToDelete = await Offer.findById(req.params.id);
+    console.log(offerToDelete);
 
     if (offerToDelete) {
       // Delete assets with a public ID that starts with the given prefix
       await cloudinary.api.delete_resources_by_prefix(
-        `/api/vinted/offers/${req.params._id}`
+        `/api/vinted/offers/${req.params.id}`
       );
       // Delete the empty folder
-      await cloudinary.api.delete_folder(
-        `/api/vinted/offers/${req.params._id}`
-      );
+      await cloudinary.api.delete_folder(`/api/vinted/offers/${req.params.id}`);
 
       // Delete the offer from the DB
-      offerToDelete = await Offer.findByIdAndDelete(req.params._id);
+      offerToDelete = await Offer.findByIdAndDelete(req.params.id);
 
       res.status(200).json({
         message: "Your offer has been successfully deleted.",
