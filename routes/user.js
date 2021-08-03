@@ -12,17 +12,10 @@ const encBase64 = require("crypto-js/enc-base64");
 const cloudinary = require("cloudinary").v2;
 
 // Import du model User et Offer
-// afin d'éviter des erreurs (notamment dues à d'eventuelles références entre les collections)
-// nous vous conseillons d'importer touts vos models dans toutes vos routes
-//
-// nous avons besoin de User pour effectuer une recherche dans la BDD
-// afin de savoir :
-// - si un utilisateur ayant le même email existe déjà ou pas (route signup)
-// - quel est l'utilisateur qui souhaite se connecter (route login)
 const User = require("../models/User");
 const Offer = require("../models/Offer");
 
-// déclaration de la route signup
+// route POST /user/signup
 router.post("/user/signup", async (req, res) => {
   try {
     // Recherche dans la BDD. Est-ce qu'un utilisateur possède cet email ?
@@ -86,15 +79,12 @@ router.post("/user/signup", async (req, res) => {
   }
 });
 
+// route POST /user/login
 router.post("/user/login", async (req, res) => {
   try {
     const user = await User.findOne({ email: req.fields.email });
 
     if (user) {
-      // Est-ce qu'il a rentré le bon mot de passe ?
-      // req.fields.password
-      // user.hash
-      // user.salt
       if (
         SHA256(req.fields.password + user.salt).toString(encBase64) ===
         user.hash
@@ -111,7 +101,6 @@ router.post("/user/login", async (req, res) => {
       res.status(400).json({ message: "User not found" });
     }
   } catch (error) {
-    //console.log(error.message);
     res.json({ error: error.message });
   }
 });

@@ -15,8 +15,7 @@ const Offer = require("../models/Offer");
 // Import du middleware isAuthenticated
 const isAuthenticated = require("../middlewares/isAuthenticated");
 
-// Route qui nous permet de récupérer une liste d'annonces, en fonction de filtres
-// Si aucun filtre n'est envoyé, cette route renverra l'ensemble des annonces
+// route GET /offers
 router.get("/offers", async (req, res) => {
   try {
     // création d'un objet dans lequel on va stocker nos différents filtres
@@ -83,7 +82,7 @@ router.get("/offers", async (req, res) => {
   }
 });
 
-// Route qui permmet de récupérer les informations d'une offre en fonction de son id
+// route GET /offer/:id
 router.get("/offer/:id", async (req, res) => {
   try {
     const offer = await Offer.findById(req.params.id).populate({
@@ -97,7 +96,7 @@ router.get("/offer/:id", async (req, res) => {
   }
 });
 
-// route POST to publish an offer
+// route POST /offer/publish
 router.post("/offer/publish", isAuthenticated, async (req, res) => {
   try {
     if (
@@ -129,7 +128,7 @@ router.post("/offer/publish", isAuthenticated, async (req, res) => {
       // Making sure a file is associated with the files keys
       fileKeys.forEach(async (fileKey) => {
         if (req.files[fileKey].size === 0) {
-          console.log("File key exist but no file uploaded");
+          //console.log("File key exist but no file uploaded");
           res.status(400).json({
             message: "The file is missing",
           });
@@ -139,7 +138,7 @@ router.post("/offer/publish", isAuthenticated, async (req, res) => {
             folder: `/api/vinted/offers/${newOffer._id}`,
             public_id: `${fileKey}`,
           });
-          console.log(`${fileKey} uploaded`);
+          //console.log(`${fileKey} uploaded`);
           result.public_name = fileKey;
           results.push(result);
 
@@ -148,7 +147,7 @@ router.post("/offer/publish", isAuthenticated, async (req, res) => {
             newOffer.product_pictures = results;
             // Save the newOffer with files details in the DB
             await newOffer.save();
-            console.log("Pictures details saved in DB");
+            //console.log("Pictures details saved in DB");
             res.status(201).json(newOffer);
           }
         }
@@ -159,6 +158,7 @@ router.post("/offer/publish", isAuthenticated, async (req, res) => {
   }
 });
 
+// route PUT /offer/update/:id
 router.put("/offer/update/:id", isAuthenticated, async (req, res) => {
   const offerToModify = await Offer.findById(req.params.id);
   try {
@@ -220,10 +220,11 @@ router.put("/offer/update/:id", isAuthenticated, async (req, res) => {
   }
 });
 
+// route DELETE /offer/delete/:id
 router.delete("/offer/delete/:id", isAuthenticated, async (req, res) => {
   try {
     let offerToDelete = await Offer.findById(req.params.id);
-    console.log(offerToDelete);
+    //console.log(offerToDelete);
 
     if (offerToDelete) {
       // Delete assets with a public ID that starts with the given prefix
