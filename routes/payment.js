@@ -22,15 +22,15 @@ router.post("/payment", isAuthenticated, async (req, res) => {
       // On envoie ici le token
       source: stripeToken,
     });
-    console.log(response.status);
+    //console.log(response.status);
 
     // TODO
     // Sauvegarder la transaction dans une BDD MongoDB
 
-    //res.status(200).json(response);
-    res.status(200).json({
+    res.status(200).json(response);
+    /*     res.status(200).json({
       message: "Your payment has been successfully created.",
-    });
+    }); */
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
