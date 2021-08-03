@@ -30,8 +30,10 @@ cloudinary.config({
 // Immport routes
 const userRoutes = require("./routes/user");
 const offerRoutes = require("./routes/offer");
+const paymentRoutes = require("./routes/payment");
 app.use(userRoutes);
 app.use(offerRoutes);
+app.use(paymentRoutes);
 
 app.get("/", (req, res) => {
   res.status(201).json("Bienvenue sur le clone de l'API de Vinted");
